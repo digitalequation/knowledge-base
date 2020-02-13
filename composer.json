@@ -1,0 +1,60 @@
+{
+  "name": "digitalequation/knowledge-base",
+  "description": "PHP (Laravel) Teamwork API",
+  "keywords": [
+    "digitalequation",
+    "knowledge-base"
+  ],
+  "homepage": "https://github.com/digitalequation/knowledge-base",
+  "license": "proprietary",
+  "type": "library",
+  "authors": [
+    {
+      "name": "Robert Cristian Chiribuc",
+      "email": "robert.chiribuc@thebug.ro",
+      "role": "Developer"
+    },
+    {
+      "name": "Marcel Mihai Bontaș",
+      "email": "marcel.baker@digitalequation.com",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": "^7.4",
+    "ext-json": "*",
+    "guzzlehttp/guzzle": "^6.5",
+    "illuminate/support": "^6.11"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^4.5",
+    "phpunit/phpunit": "^8.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "DigitalEquation\\KnowledgeBase\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "DigitalEquation\\KnowledgeBase\\Tests\\": "tests"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "DigitalEquation\\KnowledgeBase\\KnowledgeBaseServiceProvider"
+      ],
+      "aliases": {
+        "KnowledgeBase": "DigitalEquation\\KnowledgeBase\\KnowledgeBaseFacade"
+      }
+    }
+  }
+}
