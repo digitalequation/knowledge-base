@@ -23,10 +23,10 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
             // CASE 1 - No category slug given => get category index
             return success([
                 'categories' => $this->kbService->getCachedCategories()
-                    ->filter(static function ($category) {
+                    ->filter(function ($category) {
                         return $category['id'];
                     })
-                    ->map(static function ($category) {
+                    ->map(function ($category) {
                         return collect($category)
                             ->only(['name', 'slug'])
                             ->put('icon', $this->kbService->getCategoryIcon($category['slug']));
@@ -45,7 +45,7 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
 
         return success(compact('category') + [
                 'articles' => $this->kbService->getCachedArticles()
-                    ->filter(static function ($article) use ($categorySlug) {
+                    ->filter(function ($article) use ($categorySlug) {
                         return in_array($categorySlug, $article['categories'], true);
                     })->values(),
             ]);
@@ -96,7 +96,7 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
         }
 
         $results = $this->kbService->getCachedArticles()
-            ->map(static function ($article) use ($term) {
+            ->map(function ($article) use ($term) {
                 // Defines a search relevancy score (with 0 meaning the term is not found at all)
                 $score = 0;
 
@@ -188,7 +188,7 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
                     'categories', 'contents', 'slug', 'title', 'keywords', 'score', 'keywordMatch', 'contentSummaries'
                 ]);
             })
-            ->filter(static function ($article) {
+            ->filter(function ($article) {
                 // Exclude articles without a relevancy score (term not found)
                 return $article['score'];
             })
