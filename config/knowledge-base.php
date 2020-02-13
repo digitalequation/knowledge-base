@@ -48,7 +48,7 @@ return [
      | The "xxx" is the Site ID.
      |
      */
-    'site_id' => env('TEAMWORK_SITE_ID'),
+    'site_id' => env('TEAMWORK_DESK_SITE_ID'),
 
     /*
      |--------------------------------------------------------------------------
