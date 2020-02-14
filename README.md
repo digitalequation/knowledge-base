@@ -12,7 +12,7 @@ composer require digitalequation/knowledge-base
 
 After the installation is complete, from your project's root run:
 ```bash
-php artisan knowledge-base:config
+php artisan knowledge-base:install
 ```
 
 This will publish all the config file for the package.
@@ -20,7 +20,7 @@ This will publish all the config file for the package.
 ## Usage
 
 Available commands:  
-**NOTE:** passing `--force` to any command will overwrite the already published files.
+**NOTE:** passing `--force` to the command will overwrite the already published files.
 ``` php
 # Publish the config file
 php artisan knowledge-base:config
