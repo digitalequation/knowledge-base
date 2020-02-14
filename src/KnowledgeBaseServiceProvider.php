@@ -2,7 +2,7 @@
 
 namespace DigitalEquation\KnowledgeBase;
 
-use DigitalEquation\KnowledgeBase\Console\ConfigCommand;
+use DigitalEquation\KnowledgeBase\Console\{ConfigCommand, InstallCommand};
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -86,7 +86,10 @@ class KnowledgeBaseServiceProvider extends ServiceProvider
      */
     private function registerCommands(): void
     {
-        $this->commands([ConfigCommand::class]);
+        $this->commands([
+            ConfigCommand::class,
+            InstallCommand::class,
+        ]);
     }
 
     /**
