@@ -20,7 +20,7 @@ This will publish all the config file for the package.
 ## Usage
 
 Available commands:  
-**NOTE:** passing `--force` to the command will overwrite the already published files.
+**NOTE:** passing `--force` to the command will overwrite the already published config file.
 ``` php
 # Publish the config file
 php artisan knowledge-base:config
