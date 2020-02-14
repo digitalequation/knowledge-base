@@ -84,7 +84,7 @@ class KnowledgeBaseService
                 });
 
             // 2. Collect article IDs to retrieve
-            $articleIDs = self::getArticleIndex()->pluck('id')->toArray();
+            $articleIDs = $this->getArticleIndex()->pluck('id')->toArray();
 
             // 3. Collect and sort article contents based on ID
             $articles = collect($this->service->getArticles($articleIDs))
@@ -117,7 +117,7 @@ class KnowledgeBaseService
      */
     public function getCachedArticles()
     {
-        return self::getCachedData()['articles'];
+        return $this->getCachedData()['articles'];
     }
 
     /**
@@ -126,7 +126,7 @@ class KnowledgeBaseService
      */
     public function getCachedCategories()
     {
-        return self::getCachedData()['categories'];
+        return $this->getCachedData()['categories'];
     }
 
     /**
@@ -140,7 +140,7 @@ class KnowledgeBaseService
         Cache::forget($this->cacheKey);
 
         try {
-            self::getCachedData();
+            $this->getCachedData();
             return true;
         } catch (Exception $e) {
             Cache::forever($this->cacheKey, $previous);
