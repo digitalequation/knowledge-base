@@ -2,6 +2,9 @@
 
 All notable changes to `knowledge-base` will be documented in this file
 
+### 1.0.3 - 2020-03-05
+- support for Laravel 7
+
 ### 1.0.2 - 2020-02-14
 - removed static method call on KnowledgeBaseService
 
