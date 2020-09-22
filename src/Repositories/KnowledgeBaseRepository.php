@@ -47,7 +47,17 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
                 'articles' => $this->kbService->getCachedArticles()
                     ->filter(function ($article) use ($categorySlug) {
                         return in_array($categorySlug, $article['categories'], true);
-                    })->values(),
+                    })->map(function ($article) use ($categorySlug) {
+                        // Generate standard links for articles
+                        $article = collect($article)
+                            ->put('url', sprintf('%s#%s',
+                                route('kb.category', ['slug' => $categorySlug]),
+                                urlencode($article['slug'])
+                            ));
+
+                        return $article->only(['title', 'url']);
+                    })
+                    ->values(),
             ]);
     }
 
