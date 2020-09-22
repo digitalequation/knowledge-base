@@ -50,8 +50,9 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
                     })->map(function ($article) use ($categorySlug) {
                         // Generate standard links for articles
                         $article = collect($article)
-                            ->put('url', sprintf('%s#%s',
-                                route('api.kb.category', ['category_slug' => $categorySlug]),
+                            ->put('url', sprintf('%s/knowledge-base/category/%s#%s',
+                                config('app.url'),
+                                $categorySlug,
                                 urlencode($article['slug'])
                             ));
 
