@@ -2,30 +2,17 @@
 
 namespace DigitalEquation\KnowledgeBase\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
 use DigitalEquation\KnowledgeBase\Contracts\Repositories\KnowledgeBaseRepository;
 use DigitalEquation\KnowledgeBase\Services\KnowledgeBaseService;
-use Illuminate\Contracts\Routing\ResponseFactory;
-use Symfony\Component\HttpFoundation\Response;
 
-class KnowledgeBaseAPIController extends Controller
+class KnowledgeBaseAPIController
 {
     protected KnowledgeBaseRepository $kb;
 
     protected KnowledgeBaseService $service;
 
-    /**
-     * KnowledgeBaseAPIController constructor.
-     *
-     * @param KnowledgeBaseRepository $kb
-     * @param KnowledgeBaseService $service
-     */
     public function __construct(KnowledgeBaseRepository $kb, KnowledgeBaseService $service)
     {
-        $this->middleware('role:admin')->only([
-            'getUpdateCache',
-        ]);
-
         $this->kb      = $kb;
         $this->service = $service;
     }
@@ -35,7 +22,7 @@ class KnowledgeBaseAPIController extends Controller
      *
      * @param string $categorySlug (optional) category slug to retrieve index for (else fallback to category index)
      *
-     * @return ResponseFactory|Response
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
      */
     public function getIndex($categorySlug = null)
     {
@@ -47,26 +34,29 @@ class KnowledgeBaseAPIController extends Controller
      *
      * @param string $slug category slug to get article index for
      *
-     * @return ResponseFactory|Response
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function getCategory($slug)
+    public function getCategory(string $slug): \Illuminate\Http\JsonResponse
     {
-        $category = $this->service->getCachedCategories()->where('slug', $slug)->first();
+        $category = $this->service->getCachedCategories()->firstWhere('slug', $slug);
 
         abort_if(empty($category), 403, 'Knowledge base category does not exist...');
 
-        return success(['category' => $category]);
+        return response()->json([
+            'success'  => true,
+            'category' => $category,
+        ]);
     }
 
     /**
      * Return a single article.
      *
      * @param string $categorySlug category slug of the article to retrieve
-     * @param string $articleSlug article slug to retrieve
+     * @param string $articleSlug  article slug to retrieve
      *
-     * @return ResponseFactory|Response
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
      */
-    public function getArticle($categorySlug, $articleSlug)
+    public function getArticle(string $categorySlug, string $articleSlug)
     {
         return $this->kb->getArticle($categorySlug, $articleSlug);
     }
@@ -76,9 +66,9 @@ class KnowledgeBaseAPIController extends Controller
      *
      * @param string $term search term to retrieve results for
      *
-     * @return ResponseFactory|Response
+     * @return mixed
      */
-    public function getSearch($term)
+    public function getSearch(string $term)
     {
         return $this->kb->search($term);
     }
@@ -86,10 +76,13 @@ class KnowledgeBaseAPIController extends Controller
     /**
      * Force an immediate cache update.
      *
-     * @return ResponseFactory|Response
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function getUpdateCache()
+    public function getUpdateCache(): \Illuminate\Http\JsonResponse
     {
-        return success(['updated' => $this->service->clearCache()]);
+        return response()->json([
+            'success' => true,
+            'updated' => $this->service->clearCache(),
+        ]);
     }
 }

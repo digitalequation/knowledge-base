@@ -23,7 +23,7 @@ class TeamworkTestCase extends TestCase
      *
      * @return void
      */
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         // Setup the Teamwork domain and API Key
         $app['config']->set('knowledge-base.domain', 'somedomain');
@@ -40,7 +40,7 @@ class TeamworkTestCase extends TestCase
      *
      * @return Client
      */
-    protected function mockClient($status, $body)
+    protected function mockClient($status, $body): Client
     {
         $mock    = new MockHandler([new Response($status, [], $body)]);
         $handler = HandlerStack::create($mock);

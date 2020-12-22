@@ -2,9 +2,9 @@
 
 namespace DigitalEquation\KnowledgeBase;
 
-use DigitalEquation\KnowledgeBase\Services\TeamworkService;
+use DigitalEquation\KnowledgeBase\Services\KnowledgeBaseService;
 
-class KnowledgeBase extends TeamworkService
+class KnowledgeBase extends KnowledgeBaseService
 {
     //
 }
