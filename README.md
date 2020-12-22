@@ -1,6 +1,8 @@
-# PHP (Laravel) Knowledge Base (Internal Use)
+# PHP (Laravel) Knowledge Base v2 (Internal Use)
 
 [![Actions Status](https://github.com/digitalequation/knowledge-base/workflows/Run%20Tests/badge.svg)](https://github.com/digitalequation/knowledge-base/actions)
+
+<h3><span style="color:red">For version 1 of the package check the [v1.md](./v1.md) documentation.</span></h3>
 
 ## Installation
 
@@ -10,20 +12,9 @@ You can install the package via composer:
 composer require digitalequation/knowledge-base
 ```
 
-After the installation is complete, from your project's root run:
+After the installation is complete, publish the config file:
 ```bash
-php artisan knowledge-base:install
-```
-
-This will publish all the config file for the package.
-
-## Usage
-
-Available commands:  
-**NOTE:** passing `--force` to the command will overwrite the already published config file.
-``` php
-# Publish the config file
-php artisan knowledge-base:config
+php artisan vendor:publish --provider="DigitalEquation\KnowledgeBase\KnowledgeBaseServiceProvider" --tag="config"
 ```
 
 ### Testing
