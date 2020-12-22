@@ -39,17 +39,16 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
         }
 
         return response()->json([
-            'success' => true,
-            compact('category') + [
-                'articles' => $this->service->getCachedArticles()
-                    ->filter(fn($article) => in_array($categorySlug, $article['categories'], true))
-                    ->map(fn($article) => collect($article)
-                        ->put('url', sprintf('%s/knowledge-base/category/%s#%s',
-                            config('app.url'),
-                            $categorySlug,
-                            urlencode($article['slug'])
-                        ))->only(['title', 'url']))->values(),
-            ],
+            'success'  => true,
+            'category' => $category,
+            'articles' => $this->service->getCachedArticles()
+                ->filter(fn($article) => in_array($categorySlug, $article['categories'], true))
+                ->map(fn($article) => collect($article)
+                    ->put('url', sprintf('%s/knowledge-base/category/%s#%s',
+                        config('app.url'),
+                        $categorySlug,
+                        urlencode($article['slug'])
+                    ))->only(['title', 'url']))->values(),
         ]);
     }
 
@@ -78,7 +77,7 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
 
         return response()->json([
             'success' => true,
-            'article' => $article->only(['contents', 'title', 'keywords', 'relatedArticles']),
+            'article' => collect($article)->only(['contents', 'title', 'keywords', 'relatedArticles']),
         ]);
     }
 
@@ -196,7 +195,7 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
 
         return response()->json([
             'success' => true,
-            compact('results'),
+            'results' => $results,
         ]);
     }
 }
