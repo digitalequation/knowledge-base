@@ -2,6 +2,19 @@
 
 All notable changes to `knowledge-base` will be documented in this file
 
+### 2.0.0 - 2020-12-22
+- API rebuild
+- route authorization
+
+### 1.1.2 - 2020-09-22
+- remove named routes
+
+### 1.1.1 - 2020-09-22
+- misc
+
+### 1.1.0 - 2020-09-22
+- add named routes
+
 ### 1.0.4 - 2020-03-05
 - downgrade guzzle to 6.5
 - upgrade orchestral/testbench
