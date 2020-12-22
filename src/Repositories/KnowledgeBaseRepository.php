@@ -7,79 +7,66 @@ use DigitalEquation\KnowledgeBase\Services\KnowledgeBaseService;
 
 class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
 {
-    protected KnowledgeBaseService $kbService;
+    protected KnowledgeBaseService $service;
 
-    public function __construct(KnowledgeBaseService $kbService)
+    public function __construct(KnowledgeBaseService $service)
     {
-        $this->kbService = $kbService;
+        $this->service = $service;
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getCategory($categorySlug = null)
     {
-        if (empty($categorySlug)) {
+        if (!$categorySlug) {
             // CASE 1 - No category slug given => get category index
-            return success([
-                'categories' => $this->kbService->getCachedCategories()
-                    ->filter(function ($category) {
-                        return $category['id'];
-                    })
-                    ->map(function ($category) {
-                        return collect($category)
-                            ->only(['name', 'slug'])
-                            ->put('icon', $this->kbService->getCategoryIcon($category['slug']));
-                    })->values(),
+            return response()->json([
+                'success'    => true,
+                'categories' => $this->service->getCachedCategories()
+                    ->filter(fn($category) => $category['id'])
+                    ->map(fn($category) => collect($category)
+                        ->only(['name', 'slug'])
+                        ->put('icon', $this->service->getCategoryIcon($category['slug'])))->values(),
             ]);
         }
 
         // CASE 2 - Category slug given => get article index for category
-        $category = $this->kbService->getCachedCategories()
-            ->where('slug', $categorySlug)
-            ->first();
+        $category = $this->service->getCachedCategories()->firstWhere('slug', $categorySlug);
 
-        if (empty($category)) {
-            return error('Invalid knowledge base category!');
+        if (!$category) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid knowledge base category!',
+            ]);
         }
 
-        return success(compact('category') + [
-                'articles' => $this->kbService->getCachedArticles()
-                    ->filter(function ($article) use ($categorySlug) {
-                        return in_array($categorySlug, $article['categories'], true);
-                    })->map(function ($article) use ($categorySlug) {
-                        // Generate standard links for articles
-                        $article = collect($article)
-                            ->put('url', sprintf('%s/knowledge-base/category/%s#%s',
-                                config('app.url'),
-                                $categorySlug,
-                                urlencode($article['slug'])
-                            ));
-
-                        return $article->only(['title', 'url']);
-                    })
-                    ->values(),
-            ]);
+        return response()->json([
+            'success' => true,
+            compact('category') + [
+                'articles' => $this->service->getCachedArticles()
+                    ->filter(fn($article) => in_array($categorySlug, $article['categories'], true))
+                    ->map(fn($article) => collect($article)
+                        ->put('url', sprintf('%s/knowledge-base/category/%s#%s',
+                            config('app.url'),
+                            $categorySlug,
+                            urlencode($article['slug'])
+                        ))->only(['title', 'url']))->values(),
+            ],
+        ]);
     }
 
-    /**
-     * @inheritDoc
-     */
     public function getArticle($categorySlug, $articleSlug)
     {
-        $article = $this->kbService->getCachedArticles()
-            ->where('slug', $articleSlug)
-            ->first();
+        $article = $this->service->getCachedArticles()->firstWhere('slug', $articleSlug);
 
         if (empty($article) || !in_array($categorySlug, $article['categories'], true)) {
-            return error('Invalid knowledge base article!');
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid knowledge base article!',
+            ]);
         }
 
         // Generate standard links for related articles
         foreach ($article['relatedArticles'] as $key => $related) {
-            $relatedArticle = $this->kbService->getCachedArticles()
-                ->where('id', $related['id'])
-                ->first();
+            $relatedArticle = $this->service->getCachedArticles()->firstWhere('id', $related['id']);
 
             $article['relatedArticles'][$key]['url'] = sprintf('%s#%s',
                 route('kb.category', ['slug' => $relatedArticle['categories'][0]]),
@@ -89,24 +76,25 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
             unset($article['relatedArticles'][$key]['id']);
         }
 
-        return success([
-            'article' => collect($article)->only(['contents', 'title', 'keywords', 'relatedArticles']),
+        return response()->json([
+            'success' => true,
+            'article' => $article->only(['contents', 'title', 'keywords', 'relatedArticles']),
         ]);
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function search($term)
+    public function search($term): \Illuminate\Http\JsonResponse
     {
         // Strip search term of unwanted characters
         $term = preg_replace('[^a-zA-Z0-9- ]', '', $term);
 
         if (empty($term)) {
-            return success(['results' => []]);
+            return response()->json([
+                'success' => true,
+                'results' => [],
+            ]);
         }
 
-        $results = $this->kbService->getCachedArticles()
+        $results = $this->service->getCachedArticles()
             ->map(function ($article) use ($term) {
                 // Defines a search relevancy score (with 0 meaning the term is not found at all)
                 $score = 0;
@@ -196,19 +184,19 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
                 $article['contentSummaries'] = $contentMatchSummaries;
 
                 return collect($article)->only([
-                    'categories', 'contents', 'slug', 'title', 'keywords', 'score', 'keywordMatch', 'contentSummaries'
+                    'categories', 'contents', 'slug', 'title', 'keywords', 'score', 'keywordMatch', 'contentSummaries',
                 ]);
             })
-            ->filter(function ($article) {
-                // Exclude articles without a relevancy score (term not found)
-                return $article['score'];
-            })
+            ->filter(fn($article) => $article['score'])
             ->values()->toArray();
 
         // Sort results based on score
         $resultScore = array_column($results, 'score');
         array_multisort($resultScore, SORT_DESC, $results);
 
-        return success(compact('results'));
+        return response()->json([
+            'success' => true,
+            compact('results'),
+        ]);
     }
 }
