@@ -52,6 +52,23 @@ return [
 
     /*
      |--------------------------------------------------------------------------
+     | Permissions Middleware
+     |--------------------------------------------------------------------------
+     |
+     | Set the rules for user permissions.
+     | This will be used in the controller middleware as:
+     | $this->middleware('role:user')...
+     |
+     | With user roles:
+     | 'role:user,manager,admin'
+     |
+     | With user permissions:
+     | 'permission:clear_knowledge_base_cache'
+     */
+    'authorization' => 'role:admin',
+
+    /*
+     |--------------------------------------------------------------------------
      | Route Group
      |--------------------------------------------------------------------------
      |
