@@ -3,41 +3,47 @@
 namespace DigitalEquation\KnowledgeBase\Services;
 
 use Cache;
-use DigitalEquation\KnowledgeBase\Exceptions\TeamworkHttpException;
+use DigitalEquation\KnowledgeBase\Exceptions\KnowledgeBaseJsonException;
 use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Pool as GuzzlePool;
+use GuzzleHttp\Psr7\Request as GuzzleRequest;
+use Illuminate\Support\Collection;
+use Psr\Http\Message\StreamInterface;
 
 class KnowledgeBaseService
 {
     public string $cacheKey = 'kb.data';
 
-    protected TeamworkService $service;
+    protected KnowledgeBaseService $service;
 
-    public function __construct(TeamworkService $service)
+    protected Client $client;
+
+    public function __construct($client = null)
     {
-        $this->service = $service;
+        if ($client instanceof Client) {
+            $this->client = $client;
+        } else {
+            $this->client = new Client([
+                'base_uri' => sprintf('https://%s.teamwork.com/desk/v1/', config('knowledge-base.domain')),
+                'auth'     => [config('knowledge-base.key'), ''],
+            ]);
+        }
     }
 
-    /**
-     * Return icon for given category
-     * @param  string $slug category slug to retrieve icon for
-     * @return string
-     */
-    public function getCategoryIcon($slug)
+    public function getCategoryIcon(string $slug): string
     {
         switch ($slug) {
-            case 'getting-started': return 'stars';
-            case 'video-tutorials': return 'file-video';
+            case 'getting-started':
+                return 'stars';
+            case 'video-tutorials':
+                return 'file-video';
         }
 
         return 'book-open';
     }
 
-    /**
-     * Return an index collection of article summaries
-     * @return Collection
-     * @throws TeamworkHttpException
-     */
-    public function getArticleIndex()
+    public function getArticleIndex(): Collection
     {
         // The current Teamwork pagination limit
         $perPage = 25;
@@ -49,7 +55,7 @@ class KnowledgeBaseService
         do {
             $page++;
 
-            $data  = $this->service->getSiteArticles(config('knowledge-base.site_id'), $page);
+            $data  = $this->getSiteArticles(config('knowledge-base.site_id'), $page);
             $count = $data['count'];
 
             foreach ($data['articles'] as $article) {
@@ -63,21 +69,17 @@ class KnowledgeBaseService
         return collect($index);
     }
 
-    /**
-     * Get a cached array of knowledge base data
-     * @return array
-     */
-    public function getCachedData()
+    public function getCachedData(): array
     {
         // Cache knowledge base data forever (the data will be manually purged by the scheduler)
-        return Cache::rememberForever($this->cacheKey, function() {
+        return Cache::rememberForever($this->cacheKey, function () {
 
             // 1. Collect categories (along with ID <=> slug category equivalence array)
             $categoriesIDSlug = [];
 
-            $teamworkCategories = $this->service->getSiteCategories(config('knowledge-base.site_id'));
-            $categories = collect($teamworkCategories['categories'])
-                ->map(function($category) use(&$categoriesIDSlug) {
+            $teamworkCategories = $this->getSiteCategories(config('knowledge-base.site_id'));
+            $categories         = collect($teamworkCategories['categories'])
+                ->map(function ($category) use (&$categoriesIDSlug) {
                     $categoriesIDSlug[$category['id']] = $category['slug'];
 
                     return collect($category)->only(['id', 'name', 'slug', 'displayOrder']);
@@ -87,13 +89,11 @@ class KnowledgeBaseService
             $articleIDs = $this->getArticleIndex()->pluck('id')->toArray();
 
             // 3. Collect and sort article contents based on ID
-            $articles = collect($this->service->getArticles($articleIDs))
-                ->map(function($article) {
-                    return collect($article)->only([
-                        'id', 'categories', 'contents', 'createdAt', 'displayOrder', 'keywords', 'relatedArticles',
-                        'slug', 'title', 'updatedAt'
-                    ]);
-                })
+            $articles = collect($this->getArticles($articleIDs))
+                ->map(fn($article) => collect($article)->only([
+                    'id', 'categories', 'contents', 'createdAt', 'displayOrder', 'keywords', 'relatedArticles',
+                    'slug', 'title', 'updatedAt',
+                ]))
                 ->toArray();
 
             array_multisort(array_column($articles, 'id'), SORT_DESC, $articles);
@@ -111,20 +111,12 @@ class KnowledgeBaseService
         });
     }
 
-    /**
-     * Get a cached collection of all knowledge base articles
-     * @return Collection
-     */
-    public function getCachedArticles()
+    public function getCachedArticles(): Collection
     {
         return $this->getCachedData()['articles'];
     }
 
-    /**
-     * Get a cached collection of all knowledge base categories
-     * @return Collection
-     */
-    public function getCachedCategories()
+    public function getCachedCategories(): Collection
     {
         return $this->getCachedData()['categories'];
     }
@@ -133,7 +125,7 @@ class KnowledgeBaseService
      * Clear knowledge base data cache and reload remote content
      * (this method will revert to the previously cached version if it encounters any errors)
      */
-    public function clearCache()
+    public function clearCache(): bool
     {
         $previous = Cache::get($this->cacheKey);
 
@@ -145,6 +137,84 @@ class KnowledgeBaseService
         } catch (Exception $e) {
             Cache::forever($this->cacheKey, $previous);
             return false;
+        }
+    }
+
+    public function getSites(): array
+    {
+        return $this->getResponse(
+            $this->client->get('helpdocs/sites.json')->getBody()
+        );
+    }
+
+    public function getSite(string $siteID): array
+    {
+        return $this->getResponse(
+            $this->client->get(sprintf('helpdocs/sites/%s.json', $siteID))->getBody()
+        );
+    }
+
+    public function getCategoryArticles(int $categoryID, $page = 1): array
+    {
+        return $this->getResponse(
+            $this->client->get(sprintf('helpdocs/categories/%s/articles.json', $categoryID), [
+                'query' => compact('page'),
+            ])->getBody()
+        );
+    }
+
+    public function getSiteArticles(int $siteID, $page = 1): array
+    {
+        return $this->getResponse(
+            $this->client->get(sprintf('helpdocs/sites/%s/articles.json', $siteID), [
+                'query' => compact('page'),
+            ])->getBody()
+        );
+    }
+
+    public function getArticle(int $articleID): array
+    {
+        return $this->getResponse(
+            $this->client->get(sprintf('helpdocs/articles/%s.json', $articleID))->getBody()
+        );
+    }
+
+    public function getArticles($articleIDs): array
+    {
+        $articles = [];
+
+        $requests = array_map(static function ($articleID) {
+            return new GuzzleRequest('GET', sprintf('helpdocs/articles/%s.json', $articleID));
+        }, $articleIDs);
+
+        $pool = new GuzzlePool($this->client, $requests, [
+            'concurrency' => 10,
+            'fulfilled'   => function ($response) use (&$articles) {
+                $response = json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+                $articles[] = $response['article'];
+            },
+        ]);
+
+        $promise = $pool->promise();
+        $promise->wait();
+
+        return $articles;
+    }
+
+    public function getSiteCategories(int $siteID): array
+    {
+        return $this->getResponse(
+            $this->client->get(sprintf('helpdocs/sites/%s/categories.json', $siteID))->getBody()
+        );
+    }
+
+    private function getResponse(StreamInterface $body)
+    {
+        try {
+            return json_decode($body->getContents(), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new KnowledgeBaseJsonException($e->getMessage());
         }
     }
 }
