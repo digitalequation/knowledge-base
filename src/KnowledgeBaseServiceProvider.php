@@ -2,7 +2,6 @@
 
 namespace DigitalEquation\KnowledgeBase;
 
-use DigitalEquation\KnowledgeBase\Console\{ConfigCommand, InstallCommand};
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,9 +13,21 @@ class KnowledgeBaseServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->registerRoutes();
-        $this->registerPublishing();
-        $this->registerCommands();
+        // Register routes
+        Route::group($this->routeApiConfiguration(), function () {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        });
+
+        Route::group($this->routeWebConfiguration(), function () {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        });
+
+        if ($this->app->runningInConsole()) {
+            // Publish config file
+            $this->publishes([
+                __DIR__ . '/../config/knowledge-base.php' => config_path('knowledge-base.php'),
+            ], 'config');
+        }
     }
 
     public function register(): void
@@ -29,7 +40,7 @@ class KnowledgeBaseServiceProvider extends ServiceProvider
             return new KnowledgeBase;
         });
 
-        // Register tickets service
+        // Register knowledge base service
         $services = [
             'Contracts\Repositories\KnowledgeBaseRepository' => 'Repositories\KnowledgeBaseRepository'
         ];
@@ -39,23 +50,6 @@ class KnowledgeBaseServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Register the package routes.
-     */
-    protected function registerRoutes(): void
-    {
-        Route::group($this->routeApiConfiguration(), function () {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
-        });
-
-        Route::group($this->routeWebConfiguration(), function () {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-        });
-    }
-
-    /**
-     * Get the Knowledge Base [api] route group configuration array.
-     */
     protected function routeApiConfiguration(): array
     {
         return [
@@ -67,9 +61,6 @@ class KnowledgeBaseServiceProvider extends ServiceProvider
         ];
     }
 
-    /**
-     * Get the Knowledge Base [web] route group configuration array.
-     */
     protected function routeWebConfiguration(): array
     {
         return [
@@ -79,28 +70,5 @@ class KnowledgeBaseServiceProvider extends ServiceProvider
             'prefix'     => config('knowledge-base.route_group.web.prefix', '/'),
             'middleware' => config('knowledge-base.route_group.web.middleware', 'web'),
         ];
-    }
-
-    /**
-     * Register the package artisan commands.
-     */
-    private function registerCommands(): void
-    {
-        $this->commands([
-            ConfigCommand::class,
-            InstallCommand::class,
-        ]);
-    }
-
-    /**
-     * Register the package's publishable resources.
-     */
-    private function registerPublishing(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/knowledge-base.php' => config_path('knowledge-base.php'),
-            ], 'knowledge-base-config');
-        }
     }
 }
