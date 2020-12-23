@@ -20,7 +20,7 @@ class KnowledgeBaseAPIController
     /**
      * Return category index or article index for a given category.
      *
-     * @param string $categorySlug (optional) category slug to retrieve index for (else fallback to category index)
+     * @param string|null $categorySlug (optional) category slug to retrieve index for (else fallback to category index)
      *
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
      */

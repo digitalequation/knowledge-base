@@ -17,7 +17,7 @@ interface KnowledgeBaseRepository
     /**
      * Return category index or article index for a given category.
      *
-     * @param null $categorySlug
+     * @param string|null $categorySlug
      *
      * @return ResponseFactory|Response
      */
