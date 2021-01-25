@@ -109,7 +109,7 @@ class KnowledgeBaseRepository implements KnowledgeBaseRepositoryContract
                 $contentMatchSummaries = [];
 
                 // Define Regex pattern to use for matching
-                $regex = sprintf('/\b%s\b/i', $term);
+                $regex = sprintf('/\b%s/mi', $term);
 
                 // CASE I. Increase score by 2.5 points in case of a title match (case insensitive)
                 preg_match($regex, $article['title'], $titleMatches);
